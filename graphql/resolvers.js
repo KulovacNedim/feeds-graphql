@@ -8,17 +8,17 @@ const Post = require(path.join(__dirname, '../models/post'));
 const {clearImage} = require('../util/file');
 
 module.exports = {
-    createUser: async function({ userInput }, req) {
+    createUser: async function ({userInput}, req) {
         //   const email = args.userInput.email;
         const errors = [];
         if (!validator.isEmail(userInput.email)) {
-            errors.push({ message: 'E-Mail is invalid.' });
+            errors.push({message: 'E-Mail is invalid.'});
         }
         if (
             validator.isEmpty(userInput.password) ||
-            !validator.isLength(userInput.password, { min: 5 })
+            !validator.isLength(userInput.password, {min: 5})
         ) {
-            errors.push({ message: 'Password too short!' });
+            errors.push({message: 'Password too short!'});
         }
         if (errors.length > 0) {
             const error = new Error('Invalid input.');
@@ -26,7 +26,7 @@ module.exports = {
             error.code = 422;
             throw error;
         }
-        const existingUser = await User.findOne({ email: userInput.email });
+        const existingUser = await User.findOne({email: userInput.email});
         if (existingUser) {
             const error = new Error('User exists already!');
             throw error;
@@ -38,10 +38,10 @@ module.exports = {
             password: hashedPw
         });
         const createdUser = await user.save();
-        return { ...createdUser._doc, _id: createdUser._id.toString() };
+        return {...createdUser._doc, _id: createdUser._id.toString()};
     },
-    login: async function({ email, password }) {
-        const user = await User.findOne({ email: email });
+    login: async function ({email, password}) {
+        const user = await User.findOne({email: email});
         if (!user) {
             const error = new Error('User not found.');
             error.code = 401;
@@ -59,22 +59,22 @@ module.exports = {
                 email: user.email
             },
             'secret',
-            { expiresIn: '1h' }
+            {expiresIn: '1h'}
         );
-        return { token: token, userId: user._id.toString() };
+        return {token: token, userId: user._id.toString()};
     },
-    createPost: async function({ postInput }, req) {
+    createPost: async function ({postInput}, req) {
         if (!req.isAuth) {
             const error = new Error('Not authenticated!');
             error.code = 401;
             throw error;
         }
         const errors = [];
-        if (validator.isEmpty(postInput.title) || !validator.isLength(postInput.title, { min: 5 })) {
-            errors.push({ message: 'Title is invalid.' });
+        if (validator.isEmpty(postInput.title) || !validator.isLength(postInput.title, {min: 5})) {
+            errors.push({message: 'Title is invalid.'});
         }
-        if (validator.isEmpty(postInput.content) || !validator.isLength(postInput.content, { min: 5 })) {
-            errors.push({ message: 'Content is invalid.' });
+        if (validator.isEmpty(postInput.content) || !validator.isLength(postInput.content, {min: 5})) {
+            errors.push({message: 'Content is invalid.'});
         }
         if (errors.length > 0) {
             const error = new Error('Invalid input.');
@@ -104,7 +104,7 @@ module.exports = {
             updatedAt: createdPost.updatedAt.toISOString()
         };
     },
-    posts: async function({page}, req) {
+    posts: async function ({page}, req) {
         if (!req.isAuth) {
             const error = new Error('Not authenticated!');
             error.code = 401;
@@ -118,8 +118,8 @@ module.exports = {
         const totalPosts = await Post.find().countDocuments();
         const posts = await Post.find()
             .sort({createdAt: -1})
-            .skip((page - 1) *perPage)
-            .limit(perPage )
+            .skip((page - 1) * perPage)
+            .limit(perPage)
             .populate('creator');
         return {
             posts: posts.map(p => {
@@ -133,13 +133,13 @@ module.exports = {
             totalPosts: totalPosts
         };
     },
-    post: async function({ id }, req) {
+    post: async function ({id}, req) {
         if (!req.isAuth) {
             const error = new Error('Not authenticated!');
             error.code = 401;
             throw error;
         }
-        const post =  await Post.findById(id).populate('creator');
+        const post = await Post.findById(id).populate('creator');
         if (!post) {
             const error = new Error('No post fount');
             error.code = 404;
@@ -152,13 +152,13 @@ module.exports = {
             updatedAt: post.updatedAt.toISOString()
         };
     },
-    updatePost: async function({id, postInput}, req) {
+    updatePost: async function ({id, postInput}, req) {
         if (!req.isAuth) {
             const error = new Error('Not authenticated!');
             error.code = 401;
             throw error;
         }
-        const post =  await Post.findById(id).populate('creator');
+        const post = await Post.findById(id).populate('creator');
         if (!post) {
             const error = new Error('No post fount');
             error.code = 404;
@@ -170,11 +170,11 @@ module.exports = {
             throw error;
         }
         const errors = [];
-        if (validator.isEmpty(postInput.title) || !validator.isLength(postInput.title, { min: 5 })) {
-            errors.push({ message: 'Title is invalid.' });
+        if (validator.isEmpty(postInput.title) || !validator.isLength(postInput.title, {min: 5})) {
+            errors.push({message: 'Title is invalid.'});
         }
-        if (validator.isEmpty(postInput.content) || !validator.isLength(postInput.content, { min: 5 })) {
-            errors.push({ message: 'Content is invalid.' });
+        if (validator.isEmpty(postInput.content) || !validator.isLength(postInput.content, {min: 5})) {
+            errors.push({message: 'Content is invalid.'});
         }
         if (errors.length > 0) {
             const error = new Error('Invalid input.');
@@ -195,7 +195,7 @@ module.exports = {
             updatedAt: updatedPost.updatedAt.toISOString()
         };
     },
-    deletePost: async function({id}, req) {
+    deletePost: async function ({id}, req) {
         if (!req.isAuth) {
             const error = new Error('Not authenticated!');
             error.code = 401;
@@ -218,5 +218,41 @@ module.exports = {
         user.posts.pull(id);
         await user.save();
         return true;
+    },
+    user: async function (args, req) {
+        if (!req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const user = await User.findById(req.userId);
+        if (!user) {
+            const error = new Error('No user found!');
+            error.code = 404;
+            throw error;
+        }
+        return {
+            ...user._doc,
+            _id: user._id.toString()
+        };
+    },
+    updateStatus: async function({status}, req) {
+        if (!req.isAuth) {
+            const error = new Error('Not authenticated!');
+            error.code = 401;
+            throw error;
+        }
+        const user = await User.findById(req.userId);
+        if (!user) {
+            const error = new Error('No user found!');
+            error.code = 404;
+            throw error;
+        }
+        user.status = status;
+        await user.save();
+        return {
+            ...user._doc,
+            _id: user._id.toString()
+        };
     }
 };
